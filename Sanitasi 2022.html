@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Sanitasi Kabupaten</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        :root {
+            --primary: #2c5aa0;
+            --primary-light: #3d7bc4;
+            --success: #00a86b;
+            --warning: #ffa500;
+            --danger: #d32f2f;
+            --gray-light: #f5f5f5;
+            --gray-dark: #333;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--gray-light);
+            color: var(--gray-dark);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: var(--white);
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .header-controls select,
+        .header-controls button {
+            padding: 8px 16px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            color: var(--white);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .header-controls select:hover,
+        .header-controls button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .kpi-unit {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .indicators-section {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .indicators-section h2 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: var(--gray-dark);
+        }
+
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .indicator-card {
+            padding: 20px;
+            background: var(--gray-light);
+            border-radius: 6px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .indicator-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-dark);
+            margin-bottom: 10px;
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar-container {
+            flex: 1;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            color: var(--white);
+            font-size: 10px;
+            padding-right: 5px;
+            transition: width 0.3s;
+        }
+
+        .progress-percentage {
+            font-weight: 600;
+            color: var(--primary);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-green {
+            background: rgba(0, 168, 107, 0.1);
+            color: var(--success);
+        }
+
+        .status-yellow {
+            background: rgba(255, 165, 0, 0.1);
+            color: var(--warning);
+        }
+
+        .status-red {
+            background: rgba(211, 47, 47, 0.1);
+            color: var(--danger);
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            margin-bottom: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .table-section {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th {
+            background: var(--gray-light);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--gray-dark);
+            border-bottom: 2px solid #ddd;
+            font-size: 13px;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        table tr:hover {
+            background: var(--gray-light);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: var(--gray-dark);
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .detail-view {
+            display: none;
+        }
+
+        .detail-view.active {
+            display: block;
+        }
+
+        .overview-view.hidden {
+            display: none;
+        }
+
+        .back-btn {
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .indicators-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .kpi-value {
+                font-size: 24px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media print {
+            body {
+                background: var(--white);
+            }
+
+            .header-controls {
+                display: none;
+            }
+
+            .detail-view {
+                display: none !important;
+            }
+
+            .overview-view {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📊 Dashboard Sanitasi <span id="headerKabupaten">Kabupaten GORONTALO UTARA</span></h1>
+            <div class="header-controls">
+                <select id="tahunSelect" onchange="updateDashboard()">
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                </select>
+                <button onclick="window.print()" class="btn btn-secondary">🖨️ Print</button>
+                <button onclick="downloadData()" class="btn btn-secondary">⬇️ Download</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- OVERVIEW VIEW -->
+        <div class="overview-view" id="overviewView">
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Populasi</div>
+                    <div class="kpi-value" id="kpiPopulasi">2,5M</div>
+                    <div class="kpi-unit">Jiwa</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Keluarga</div>
+                    <div class="kpi-value" id="kpiKeluarga">450K</div>
+                    <div class="kpi-unit">KK</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Kecamatan</div>
+                    <div class="kpi-value" id="kpiKecamatan">25</div>
+                    <div class="kpi-unit">Unit</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Desa</div>
+                    <div class="kpi-value" id="kpiDesa">180</div>
+                    <div class="kpi-unit">Unit</div>
+                </div>
+            </div>
+
+            <!-- Indicators -->
+            <div class="indicators-section">
+                <h2>📈 Indikator Monitoring Sanitasi</h2>
+                <div class="indicators-grid" id="indicatorsContainer"></div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-section">
+                <div class="chart-container">
+                    <div class="chart-title">📊 Top Kecamatan - Akses Toilet</div>
+                    <canvas id="barChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">📈 Trend Target vs Aktual (12 Bulan)</div>
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Table Kecamatan -->
+            <div class="table-section">
+                <h2 style="margin-bottom: 20px;">🏘️ Data Kecamatan</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kecamatan</th>
+                            <th>Desa</th>
+                            <th>Populasi</th>
+                            <th>Keluarga</th>
+                            <th>Akses Toilet %</th>
+                            <th>Jaringan %</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableKecamatan"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- DETAIL VIEW -->
+        <div class="detail-view" id="detailView">
+            <div class="back-btn">
+                <button onclick="backToOverview()" class="btn btn-secondary">← Kembali ke Kabupaten</button>
+            </div>
+            <div id="detailContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== DATA DASHBOARD (UBAH DI SINI SESUAI DATA ANDA) =====
+        const dashboardData = {
+            kabupaten: "GORONTALO UTARA",
+            tahun: 2024,
+            meta: {
+                populasi: 2500000,
+                keluarga: 450000,
+                kecamatan_count: 25,
+                desa_count: 180
+            },
+            indicators: [
+                { nama: "Akses Toilet", value: 92, status: "green" },
+                { nama: "Jaringan Sanitasi", value: 78, status: "yellow" },
+                { nama: "Pengolahan Limbah", value: 65, status: "red" },
+                { nama: "Akses Slum", value: 85, status: "green" },
+                { nama: "Fasilitas IPAL", value: 72, status: "yellow" },
+                { nama: "Program STBM", value: 88, status: "green" }
+            ],
+            kecamatan: [
+                {
+                    nama: "Tolinggula",
+                    desa_count: 15,
+                    populasi: 250000,
+                    keluarga: 45000,
+                    kpi: { toilet_access: 95, network_coverage: 82, treatment: 70 },
+                    status: "green",
+                    desa: [
+                        { nama: "Desa Tolinggula Pantai", toilet_access: 98, network: 85, status: "green" },
+                        { nama: "Desa limbato", toilet_access: 92, network: 79, status: "yellow" },
+                        { nama: "Desa Molangga", toilet_access: 94, network: 82, status: "green" }
+                    ]
+                },
+                {
+                    nama: "Gentuma",
+                    desa_count: 12,
+                    populasi: 180000,
+                    keluarga: 32000,
+                    kpi: { toilet_access: 88, network_coverage: 75, treatment: 60 },
+                    status: "yellow",
+                    desa: [
+                        { nama: "Desa Pasalae", toilet_access: 90, network: 78, status: "yellow" },
+                        { nama: "Desa Nanati Jaya", toilet_access: 86, network: 72, status: "yellow" }
+                    ]
+                },
+                {
+                    nama: "Kwandang",
+                    desa_count: 18,
+                    populasi: 220000,
+                    keluarga: 40000,
+                    kpi: { toilet_access: 92, network_coverage: 80, treatment: 68 },
+                    status: "green",
+                    desa: [
+                        { nama: "Desa Bulalo", toilet_access: 95, network: 83, status: "green" },
+                        { nama: "Desa Molingkapoto", toilet_access: 89, network: 77, status: "yellow" }
+                    ]
+                }
+            ]
+        };
+
+        let barChart, lineChart;
+
+        // ===== FUNCTIONS =====
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+            if (num >= 1000) return (num / 1000).toFixed(0) + "K";
+            return num.toString();
+        }
+
+        function getStatusClass(status) {
+            return `status-${status}`;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                green: "✓ On Track",
+                yellow: "⚠ At Risk",
+                red: "✕ Lagging"
+            };
+            return statusMap[status] || status;
+        }
+
+        function updateDashboard() {
+            // Update KPI
+            document.getElementById("kpiPopulasi").textContent = formatNumber(dashboardData.meta.populasi);
+            document.getElementById("kpiKeluarga").textContent = formatNumber(dashboardData.meta.keluarga);
+            document.getElementById("kpiKecamatan").textContent = dashboardData.meta.kecamatan_count;
+            document.getElementById("kpiDesa").textContent = dashboardData.meta.desa_count;
+            document.getElementById("headerKabupaten").textContent = dashboardData.kabupaten;
+
+            // Update Indicators
+            const indicatorsHTML = dashboardData.indicators.map(ind => `
+                <div class="indicator-card">
+                    <div class="indicator-title">${ind.nama}</div>
+                    <div class="progress-container">
+                        <div class="progress-bar-container">
+                            <div class="progress-fill" style="width: ${ind.value}%">${ind.value}%</div>
+                        </div>
+                        <div class="progress-percentage">${ind.value}%</div>
+                    </div>
+                    <span class="status-badge ${getStatusClass(ind.status)}">${getStatusText(ind.status)}</span>
+                </div>
+            `).join("");
+            document.getElementById("indicatorsContainer").innerHTML = indicatorsHTML;
+
+            // Update Table
+            const tableHTML = dashboardData.kecamatan.map(kec => `
+                <tr>
+                    <td><strong>${kec.nama}</strong></td>
+                    <td>${kec.desa_count}</td>
+                    <td>${formatNumber(kec.populasi)}</td>
+                    <td>${formatNumber(kec.keluarga)}</td>
+                    <td>${kec.kpi.toilet_access}%</td>
+                    <td>${kec.kpi.network_coverage}%</td>
+                    <td><span class="status-badge ${getStatusClass(kec.status)}">${getStatusText(kec.status)}</span></td>
+                    <td><button onclick="showDetail('${kec.nama}')" class="btn btn-primary">Detail →</button></td>
+                </tr>
+            `).join("");
+            document.getElementById("tableKecamatan").innerHTML = tableHTML;
+
+            // Update Charts
+            updateCharts();
+        }
+
+        function updateCharts() {
+            const kecamatanNames = dashboardData.kecamatan.map(k => k.nama);
+            const toiletAccessValues = dashboardData.kecamatan.map(k => k.kpi.toilet_access);
+
+            // Bar Chart
+            const barCtx = document.getElementById("barChart").getContext("2d");
+            if (barChart) barChart.destroy();
+            barChart = new Chart(barCtx, {
+                type: "bar",
+                data: {
+                    labels: kecamatanNames,
+                    datasets: [{
+                        label: "Akses Toilet (%)",
+                        data: toiletAccessValues,
+                        backgroundColor: "#2c5aa0",
+                        borderColor: "#1e3f5a",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: true } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+
+            // Line Chart
+            const lineCtx = document.getElementById("lineChart").getContext("2d");
+            if (lineChart) lineChart.destroy();
+            lineChart = new Chart(lineCtx, {
+                type: "line",
+                data: {
+                    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                    datasets: [
+                        {
+                            label: "Target",
+                            data: [85, 86, 87, 88, 88, 89, 90, 90, 91, 91, 92, 92],
+                            borderColor: "#ffa500",
+                            backgroundColor: "rgba(255, 165, 0, 0.1)",
+                            tension: 0.4
+                        },
+                        {
+                            label: "Aktual",
+                            data: [80, 82, 83, 85, 84, 86, 88, 87, 89, 90, 91, 92],
+                            borderColor: "#2c5aa0",
+                            backgroundColor: "rgba(44, 90, 160, 0.1)",
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: true } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+        }
+
+        function showDetail(kecamatanName) {
+            const kecamatan = dashboardData.kecamatan.find(k => k.nama === kecamatanName);
+            if (!kecamatan) return;
+
+            const desaTableHTML = kecamatan.desa.map(desa => `
+                <tr>
+                    <td>${desa.nama}</td>
+                    <td>${desa.toilet_access}%</td>
+                    <td>${desa.network}%</td>
+                    <td><span class="status-badge ${getStatusClass(desa.status)}">${getStatusText(desa.status)}</span></td>
+                </tr>
+            `).join("");
+
+            const detailHTML = `
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Desa</div>
+                        <div class="kpi-value">${kecamatan.desa_count}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Populasi</div>
+                        <div class="kpi-value">${formatNumber(kecamatan.populasi)}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Keluarga</div>
+                        <div class="kpi-value">${formatNumber(kecamatan.keluarga)}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Status</div>
+                        <div class="kpi-value"><span class="status-badge ${getStatusClass(kecamatan.status)}">${getStatusText(kecamatan.status)}</span></div>
+                    </div>
+                </div>
+
+                <div class="indicators-section">
+                    <h2>KPI Kecamatan ${kecamatan.nama}</h2>
+                    <div class="indicators-grid">
+                        <div class="indicator-card">
+                            <div class="indicator-title">Akses Toilet</div>
+                            <div class="progress-container">
+                                <div class="progress-bar-container">
+                                    <div class="progress-fill" style="width: ${kecamatan.kpi.toilet_access}%">${kecamatan.kpi.toilet_access}%</div>
+                                </div>
+                                <div class="progress-percentage">${kecamatan.kpi.toilet_access}%</div>
+                            </div>
+                        </div>
+                        <div class="indicator-card">
+                            <div class="indicator-title">Jaringan Sanitasi</div>
+                            <div class="progress-container">
+                                <div class="progress-bar-container">
+                                    <div class="progress-fill" style="width: ${kecamatan.kpi.network_coverage}%">${kecamatan.kpi.network_coverage}%</div>
+                                </div>
+                                <div class="progress-percentage">${kecamatan.kpi.network_coverage}%</div>
+                            </div>
+                        </div>
+                        <div class="indicator-card">
+                            <div class="indicator-title">Pengolahan</div>
+                            <div class="progress-container">
+                                <div class="progress-bar-container">
+                                    <div class="progress-fill" style="width: ${kecamatan.kpi.treatment}%">${kecamatan.kpi.treatment}%</div>
+                                </div>
+                                <div class="progress-percentage">${kecamatan.kpi.treatment}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-section">
+                    <h2 style="margin-bottom: 20px;">Ranking Desa - ${kecamatan.nama}</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Desa</th>
+                                <th>Akses Toilet %</th>
+                                <th>Jaringan %</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${desaTableHTML}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById("detailContent").innerHTML = detailHTML;
+            document.getElementById("overviewView").classList.add("hidden");
+            document.getElementById("detailView").classList.add("active");
+        }
+
+        function backToOverview() {
+            document.getElementById("overviewView").classList.remove("hidden");
+            document.getElementById("detailView").classList.remove("active");
+        }
+
+        function downloadData() {
+            alert("Fitur download sedang dikembangkan. Gunakan Print → Save as PDF untuk export");
+        }
+
+        // Initialize on load
+        document.addEventListener("DOMContentLoaded", function() {
+            updateDashboard();
+        });
+    </script>
+</body>
+</html>
